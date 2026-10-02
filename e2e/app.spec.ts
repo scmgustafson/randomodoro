@@ -78,7 +78,27 @@ test('random with no possible split shows an error toast', async ({ page }) => {
   await setField(page, /^Total work/, '7')
   await setField(page, /^Longest/, '6')
   await button(page, 'Random').click()
-  await expect(page.getByRole('alert').filter({ hasText: 'No sessions of 5 to 6 minutes add up to 7' })).toBeVisible()
+  await expect(page.getByRole('alert').filter({ hasText: "4 sessions of 5 to 6 minutes can't add up to 7 minutes" })).toBeVisible()
+})
+
+test('random makes exactly the chosen number of work sessions', async ({ page }) => {
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
+  await page.getByRole('checkbox', { name: 'Skipping uses up the whole session' }).check()
+  await setField(page, /^Number of sessions/, '3')
+  await button(page, 'Random').click()
+  for (let i = 0; i < 4; i++) await button(page, 'Skip').click() // work, break, work, break
+  await expect(phase(page)).toHaveText('Work')
+  await button(page, 'Skip').click() // the third session uses up the last of the work time
+  await expect(phase(page)).toHaveText('Done')
+})
+
+test('settings are grouped, and panel position is hidden on a phone', async ({ page }) => {
+  await open(page)
+  for (const name of ['Timer', 'Random', 'Sound', 'Display']) await expect(page.getByRole('group', { name })).toBeVisible()
+  await page.setViewportSize({ width: 375, height: 667 })
+  await expect(page.getByRole('combobox', { name: 'Panel position' })).toBeHidden()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
 })
 
 test('random starts a work session within min and max', async ({ page }) => {
@@ -191,7 +211,7 @@ test('the victory sound, not the regular one, plays when all work time is used',
 test('every length can be as short as 1 minute, with no toast', async ({ page }) => {
   await open(page)
   await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
-  for (const name of [/^Work/, /^Short break/, /^Long break/, /^Total work/, /^Shortest/, /^Longest/]) {
+  for (const name of [/^Work/, /^Short break/, /^Long break/, /^Total work/, /^Number of sessions/, /^Shortest/, /^Longest/]) {
     await setField(page, name, '1')
     await expect(field(page, name)).toHaveValue('1')
   }

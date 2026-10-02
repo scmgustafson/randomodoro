@@ -13,7 +13,7 @@ import {
 } from '@/lib/pomodoro'
 import { play, unlock, type Sound } from '@/lib/sounds'
 
-const DEFAULTS = { work: 20, short: 5, long: 15, budgetOn: false, budget: 60, min: 5, max: 30, sound: 'beep' as Sound, skipDepletes: false, blur: false, dock: 'below' }
+const DEFAULTS = { work: 20, short: 5, long: 15, budgetOn: false, budget: 60, sessions: 4, min: 5, max: 30, sound: 'beep' as Sound, skipDepletes: false, blur: false, dock: 'below' }
 type Config = typeof DEFAULTS
 
 const LABELS = { work: 'Work', short: 'Short break', long: 'Long break', done: 'Done' }
@@ -31,13 +31,14 @@ function Num(p: {
   value: number
   min: number
   max: number
+  unit?: string
   onCommit: (v: number) => void
   notify: (msg: string) => void
 }) {
   return (
     <label>
       <span>
-        {p.label} <small>min</small>
+        {p.label} <small>{p.unit ?? 'min'}</small>
       </span>
       <input
         type="number"
@@ -128,12 +129,12 @@ export default function Page() {
       ? 'Turn on "Limit total work time" before using Random.'
       : cfg.min > cfg.max
         ? 'Shortest random session is greater than the longest.'
-        : !canSplit(cfg.budget, cfg.min, cfg.max)
-          ? `No sessions of ${cfg.min} to ${cfg.max} minutes add up to ${cfg.budget} minutes.`
+        : !canSplit(cfg.budget, cfg.sessions, cfg.min, cfg.max)
+          ? `${cfg.sessions} sessions of ${cfg.min} to ${cfg.max} minutes can't add up to ${cfg.budget} minutes.`
           : ''
     if (why) return notify(why)
     unlock()
-    begin(initialState(toSettings(cfg), randomSplit(cfg.budget, cfg.min, cfg.max)), true)
+    begin(initialState(toSettings(cfg), randomSplit(cfg.budget, cfg.sessions, cfg.min, cfg.max)), true)
   }
 
   const budgetNow = st.budgetLeft === null ? null : st.budgetLeft - (st.phase === 'work' ? st.duration - left : 0)
@@ -207,7 +208,7 @@ export default function Page() {
 
         <aside className="panel">
         <fieldset className="card" disabled={running}>
-          <legend>Settings{running && ' (pause to edit)'}</legend>
+          <legend>Timer{running && ' (pause to edit)'}</legend>
           <Num label="Work" value={cfg.work} min={1} max={120} notify={notify} onCommit={(v) => update({ work: v })} />
           <Num label="Short break" value={cfg.short} min={1} max={120} notify={notify} onCommit={(v) => update({ short: v })} />
           <Num label="Long break" value={cfg.long} min={1} max={120} notify={notify} onCommit={(v) => update({ long: v })} />
@@ -228,13 +229,18 @@ export default function Page() {
               />
             </label>
           )}
-          <hr />
+        </fieldset>
+
+        <fieldset className="card" disabled={running}>
+          <legend>Random{running && ' (pause to edit)'}</legend>
+          <Num label="Number of sessions" unit="" value={cfg.sessions} min={1} max={100} notify={notify} onCommit={(v) => setCfg({ ...cfg, sessions: v })} />
           <Num label="Shortest random session" value={cfg.min} min={1} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, min: v })} />
           <Num label="Longest random session" value={cfg.max} min={1} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, max: v })} />
           <button onClick={random}>Random</button>
         </fieldset>
 
-        <div className="card">
+        <fieldset className="card">
+          <legend>Sound</legend>
           <label>
             Sound when time is up
             <select
@@ -254,11 +260,15 @@ export default function Page() {
             Victory sound when all work is done
             <button onClick={() => play('victory')}>Preview</button>
           </label>
+        </fieldset>
+
+        <fieldset className="card">
+          <legend>Display</legend>
           <label>
             Blur the timer
             <input type="checkbox" checked={cfg.blur} onChange={(e) => setCfg({ ...cfg, blur: e.target.checked })} />
           </label>
-          <label>
+          <label className="dock-setting">
             Panel position
             <select value={cfg.dock} onChange={(e) => setCfg({ ...cfg, dock: e.target.value })}>
               <option value="left">Left</option>
@@ -266,7 +276,7 @@ export default function Page() {
               <option value="right">Right</option>
             </select>
           </label>
-        </div>
+        </fieldset>
         </aside>
       </main>
 

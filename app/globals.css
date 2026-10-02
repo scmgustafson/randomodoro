@@ -78,7 +78,15 @@ main {
 }
 
 /* Panel docked to a side of the window; narrow screens keep it below. */
+label.dock-setting {
+  display: none;
+}
+
 @media (min-width: 820px) {
+  label.dock-setting {
+    display: flex;
+  }
+
   main.dock-left,
   main.dock-right {
     max-width: none;
@@ -274,13 +282,6 @@ select:focus-visible {
 legend {
   padding: 0 8px;
   font-weight: 700;
-}
-
-hr {
-  width: 100%;
-  margin: 4px 0;
-  border: 0;
-  border-top: 1px solid var(--line);
 }
 
 label {

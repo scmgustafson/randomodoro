@@ -55,21 +55,24 @@ test('random queue sets work lengths, then falls back to the fixed length', () =
   assert.equal(st.duration, 1200)
 })
 
-test('randomSplit sums to the budget with every session in range', () => {
+test('randomSplit makes n sessions that sum to the budget, each in range', () => {
   for (let i = 0; i < 200; i++) {
-    const parts = randomSplit(60, 5, 25)
+    const parts = randomSplit(60, 4, 5, 25)
     assert.ok(parts)
+    assert.equal(parts.length, 4)
     assert.equal(parts.reduce((a, b) => a + b, 0), 60)
     assert.ok(parts.every((p) => Number.isInteger(p) && p >= 5 && p <= 25))
   }
 })
 
 test('randomSplit returns null when no split exists', () => {
-  assert.equal(randomSplit(7, 5, 6), null)
-  assert.equal(randomSplit(60, 30, 10), null)
-  assert.equal(canSplit(7, 5, 6), false)
-  assert.equal(canSplit(60, 5, 25), true)
-  assert.deepEqual(randomSplit(10, 5, 5), [5, 5])
+  assert.equal(randomSplit(7, 1, 5, 6), null)
+  assert.equal(randomSplit(60, 3, 30, 10), null)
+  assert.equal(canSplit(7, 1, 5, 6), false)
+  assert.equal(canSplit(60, 2, 5, 25), false) // 2 sessions of at most 25 cannot reach 60
+  assert.equal(canSplit(60, 13, 5, 25), false) // 13 sessions of at least 5 overshoot 60
+  assert.equal(canSplit(60, 4, 5, 25), true)
+  assert.deepEqual(randomSplit(10, 2, 5, 5), [5, 5])
 })
 
 test('clampMinutes rounds, clamps, and treats junk as the minimum', () => {

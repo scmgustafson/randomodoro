@@ -43,15 +43,12 @@ export function nextPhase(st: State, s: Settings, elapsed = st.duration): State 
 }
 
 // n sessions fit when n*min <= budget <= n*max.
-export function canSplit(budget: number, min: number, max: number): boolean {
-  return min >= 1 && min <= max && Math.ceil(budget / max) <= Math.floor(budget / min)
+export function canSplit(budget: number, n: number, min: number, max: number): boolean {
+  return n >= 1 && min >= 1 && min <= max && n * min <= budget && budget <= n * max
 }
 
-export function randomSplit(budget: number, min: number, max: number, rng: () => number = Math.random): number[] | null {
-  if (!canSplit(budget, min, max)) return null
-  const lo = Math.ceil(budget / max)
-  const hi = Math.floor(budget / min)
-  const n = lo + Math.floor(rng() * (hi - lo + 1))
+export function randomSplit(budget: number, n: number, min: number, max: number, rng: () => number = Math.random): number[] | null {
+  if (!canSplit(budget, n, min, max)) return null
   const parts: number[] = Array(n).fill(min)
   for (let extra = budget - n * min; extra > 0; extra--) {
     const open = parts.flatMap((p, i) => (p < max ? [i] : []))
