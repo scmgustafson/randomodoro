@@ -56,10 +56,10 @@ test('the third work session is followed by a long break; skip while paused stay
 
 test('an out-of-range length is corrected with a toast that goes away', async ({ page }) => {
   await open(page)
-  await setField(page, /^Work/, '3')
-  await expect(field(page, /^Work/)).toHaveValue('5')
-  await expect(time(page)).toHaveText('05:00')
-  const toast = page.getByRole('alert').filter({ hasText: 'Work must be a whole number from 5 to 120' })
+  await setField(page, /^Work/, '0')
+  await expect(field(page, /^Work/)).toHaveValue('1')
+  await expect(time(page)).toHaveText('01:00')
+  const toast = page.getByRole('alert').filter({ hasText: 'Work must be a whole number from 1 to 120' })
   await expect(toast).toBeVisible()
   await page.clock.runFor(4100)
   await expect(toast).toHaveCount(0)
@@ -186,4 +186,29 @@ test('the victory sound, not the regular one, plays when all work time is used',
   await page.clock.runFor('05:01')
   await expect(phase(page)).toHaveText('Done')
   expect(await page.evaluate(() => (window as unknown as { tones: number }).tones)).toBe(8)
+})
+
+test('every length can be as short as 1 minute, with no toast', async ({ page }) => {
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
+  for (const name of [/^Work/, /^Short break/, /^Long break/, /^Total work/, /^Shortest/, /^Longest/]) {
+    await setField(page, name, '1')
+    await expect(field(page, name)).toHaveValue('1')
+  }
+  await expect(page.getByRole('alert').filter({ hasText: 'must be' })).toHaveCount(0)
+  await expect(time(page)).toHaveText('01:00')
+})
+
+test('the control panel can be moved to the left or right of the tomato', async ({ page }, info) => {
+  await open(page)
+  const x = async (sel: string) => (await page.locator(sel).boundingBox())!.x
+  const position = page.getByRole('combobox', { name: 'Panel position' })
+  await position.selectOption('Left')
+  expect(await x('.panel')).toBeLessThan(await x('.tomato'))
+  await page.screenshot({ path: info.outputPath('left.png'), fullPage: true })
+  await position.selectOption('Right')
+  expect(await x('.panel')).toBeGreaterThan(await x('.tomato'))
+  await position.selectOption('Below')
+  const box = async (sel: string) => (await page.locator(sel).boundingBox())!
+  expect((await box('.panel')).y).toBeGreaterThan((await box('.tomato')).y + (await box('.tomato')).height)
 })

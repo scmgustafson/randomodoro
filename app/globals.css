@@ -68,6 +68,40 @@ main {
   gap: 20px;
 }
 
+.stage,
+.panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Panel docked to a side of the window; narrow screens keep it below. */
+@media (min-width: 820px) {
+  main.dock-left,
+  main.dock-right {
+    max-width: none;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+    padding-inline: 24px;
+  }
+
+  main.dock-left {
+    flex-direction: row-reverse;
+  }
+
+  main:not(.dock-below) .stage {
+    flex: 1;
+  }
+
+  main:not(.dock-below) .panel {
+    flex: none;
+    width: 380px;
+  }
+}
+
 /* Tomato */
 
 .tomato {

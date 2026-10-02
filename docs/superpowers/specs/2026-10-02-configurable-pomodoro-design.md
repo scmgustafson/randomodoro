@@ -100,3 +100,8 @@ UI checked manually in the browser.
 - "Blur the timer" toggle: blurs the time on the tomato and hides the progress ring. Works while the timer runs.
 - End-to-end tests run with Playwright (`npm run e2e`).
 - A phase that ends late (throttled background tab) no longer delays the following phases; the next phase is timed from when the previous one should have ended.
+
+## Addendum 3 (2026-10-02)
+
+- Every length (work, short break, long break, total work time, shortest and longest random session) can be as low as 1 minute. This replaces the earlier 5-minute minimum. Defaults are unchanged.
+- "Panel position" picker (Left, Below, Right; default Below) docks the control panel to either side of the window. On windows narrower than 820px the panel stays below.

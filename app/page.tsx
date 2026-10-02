@@ -13,7 +13,7 @@ import {
 } from '@/lib/pomodoro'
 import { play, unlock, type Sound } from '@/lib/sounds'
 
-const DEFAULTS = { work: 20, short: 5, long: 15, budgetOn: false, budget: 60, min: 5, max: 30, sound: 'beep' as Sound, skipDepletes: false, blur: false }
+const DEFAULTS = { work: 20, short: 5, long: 15, budgetOn: false, budget: 60, min: 5, max: 30, sound: 'beep' as Sound, skipDepletes: false, blur: false, dock: 'below' }
 type Config = typeof DEFAULTS
 
 const LABELS = { work: 'Work', short: 'Short break', long: 'Long break', done: 'Done' }
@@ -148,7 +148,8 @@ export default function Page() {
         </button>
       </header>
 
-      <main>
+      <main className={`dock-${cfg.dock}`}>
+        <section className="stage">
         <svg
           viewBox="0 0 220 220"
           className={`tomato${running ? ' running' : ''}${cfg.blur ? ' blurred' : ''}`}
@@ -202,17 +203,20 @@ export default function Page() {
           <button onClick={reset}>Reset</button>
         </div>
 
+        </section>
+
+        <aside className="panel">
         <fieldset className="card" disabled={running}>
           <legend>Settings{running && ' (pause to edit)'}</legend>
-          <Num label="Work" value={cfg.work} min={5} max={120} notify={notify} onCommit={(v) => update({ work: v })} />
-          <Num label="Short break" value={cfg.short} min={5} max={120} notify={notify} onCommit={(v) => update({ short: v })} />
-          <Num label="Long break" value={cfg.long} min={5} max={120} notify={notify} onCommit={(v) => update({ long: v })} />
+          <Num label="Work" value={cfg.work} min={1} max={120} notify={notify} onCommit={(v) => update({ work: v })} />
+          <Num label="Short break" value={cfg.short} min={1} max={120} notify={notify} onCommit={(v) => update({ short: v })} />
+          <Num label="Long break" value={cfg.long} min={1} max={120} notify={notify} onCommit={(v) => update({ long: v })} />
           <label>
             Limit total work time
             <input type="checkbox" checked={cfg.budgetOn} onChange={(e) => update({ budgetOn: e.target.checked })} />
           </label>
           {cfg.budgetOn && (
-            <Num label="Total work" value={cfg.budget} min={5} max={1440} notify={notify} onCommit={(v) => update({ budget: v })} />
+            <Num label="Total work" value={cfg.budget} min={1} max={1440} notify={notify} onCommit={(v) => update({ budget: v })} />
           )}
           {cfg.budgetOn && (
             <label>
@@ -225,8 +229,8 @@ export default function Page() {
             </label>
           )}
           <hr />
-          <Num label="Shortest random session" value={cfg.min} min={5} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, min: v })} />
-          <Num label="Longest random session" value={cfg.max} min={5} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, max: v })} />
+          <Num label="Shortest random session" value={cfg.min} min={1} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, min: v })} />
+          <Num label="Longest random session" value={cfg.max} min={1} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, max: v })} />
           <button onClick={random}>Random</button>
         </fieldset>
 
@@ -254,7 +258,16 @@ export default function Page() {
             Blur the timer
             <input type="checkbox" checked={cfg.blur} onChange={(e) => setCfg({ ...cfg, blur: e.target.checked })} />
           </label>
+          <label>
+            Panel position
+            <select value={cfg.dock} onChange={(e) => setCfg({ ...cfg, dock: e.target.value })}>
+              <option value="left">Left</option>
+              <option value="below">Below</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
         </div>
+        </aside>
       </main>
 
       <div className="toasts" aria-live="assertive">
