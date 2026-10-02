@@ -86,3 +86,9 @@ UI checked manually in the browser.
 - Saving settings across page refreshes.
 - Desktop notifications.
 - Accounts, session history, statistics.
+
+## Addendum (2026-10-02): polish
+
+- Top bar with the title "Randomodoro" and a dark mode toggle next to it.
+- Error toasts replace the inline Random reason and report corrected number inputs. The Random button is clickable whenever the timer is stopped.
+- Modern styling: drop shadows, cards, transitions, a progress ring around the tomato.

@@ -697,3 +697,29 @@ Run: `npm run dev` and open `http://localhost:3000`. Use Skip to move through ph
 git add app lib/sounds.ts
 git commit -m "Add tomato timer page and sounds"
 ```
+
+---
+
+### Task 4: Visual polish, top bar, dark mode, toasts
+
+Added 2026-10-02 at the user's request after plan approval.
+
+**Files:**
+- Modify: `app/page.tsx`, `app/globals.css`, `app/layout.tsx` (title)
+
+**Interfaces:**
+- Consumes: the page from Task 3. No logic changes in `lib/`.
+
+**Requirements:**
+- Top bar: title "Randomodoro" with a dark mode toggle button next to it. Browser tab title is also "Randomodoro".
+- Dark mode: toggle sets `data-theme="dark"` on `<html>`; colors come from CSS variables. Light stays ketchup red; dark is a deep, dark ketchup. Buttons stay mustard with black text in both.
+- Toasts: a small in-page toast stack (no library), auto-dismissing after 4 seconds, announced via `aria-live`. Shown when:
+  - a number field is corrected (for example "Work (min) must be 5 to 120. Set to 5.")
+  - Random cannot run. The Random button is now clickable whenever the timer is stopped, and the reason appears as an error toast instead of inline text.
+- Polish: drop shadows on tomato, cards and buttons; settings and sound picker in a rounded card; hover/press transitions on buttons; a mustard progress ring around the tomato showing how much of the phase is left; a gentle pulse on the tomato while running; three dots showing position in the 3-session cycle.
+- Respect `prefers-reduced-motion`. Keyboard focus rings stay visible. Layout works at phone width.
+
+- [ ] **Step 1:** Implement the requirements in `app/page.tsx` and `app/globals.css`; set the title in `app/layout.tsx`.
+- [ ] **Step 2:** Run `npm test && npm run build`. Expected: 9 tests pass, build clean.
+- [ ] **Step 3:** Check in the browser: both themes, a toast from typing `3` in Work, a toast from an impossible Random, progress ring moves.
+- [ ] **Step 4:** Commit: `git add app && git commit -m "Add Randomodoro top bar, dark mode, toasts, and visual polish"`
