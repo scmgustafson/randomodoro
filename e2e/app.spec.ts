@@ -74,7 +74,7 @@ test('random without a total work time shows an error toast', async ({ page }) =
 
 test('random with no possible split shows an error toast', async ({ page }) => {
   await open(page)
-  await page.getByRole('checkbox').check()
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
   await setField(page, /^Total work/, '7')
   await setField(page, /^Longest/, '6')
   await button(page, 'Random').click()
@@ -83,7 +83,7 @@ test('random with no possible split shows an error toast', async ({ page }) => {
 
 test('random starts a work session within min and max', async ({ page }) => {
   await open(page)
-  await page.getByRole('checkbox').check()
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
   await setField(page, /^Longest/, '25')
   await button(page, 'Random').click()
   await expect(button(page, 'Pause')).toBeVisible()
@@ -95,7 +95,7 @@ test('random starts a work session within min and max', async ({ page }) => {
 
 test('the work budget shortens the session and ends in Done', async ({ page }) => {
   await open(page)
-  await page.getByRole('checkbox').check()
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
   await setField(page, /^Total work/, '5')
   await expect(time(page)).toHaveText('05:00')
   await button(page, 'Start').click()
@@ -111,4 +111,79 @@ test('dark mode toggles the theme', async ({ page }, info) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(button(page, 'Light mode')).toBeVisible()
   await page.screenshot({ path: info.outputPath('dark.png'), fullPage: true })
+})
+
+test('the remaining time is exposed to screen readers', async ({ page }) => {
+  await open(page)
+  await expect(page.getByRole('img', { name: '20:00 left' })).toBeVisible()
+})
+
+test('the per-second budget line is not in a live region', async ({ page }) => {
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
+  await expect(page.locator('.budget')).toHaveCount(1)
+  await expect(page.locator('[aria-live] .budget')).toHaveCount(0)
+})
+
+test('a late tick does not delay the next phase', async ({ page }) => {
+  await open(page)
+  await button(page, 'Start').click()
+  await page.clock.fastForward('20:50') // tab was throttled: the tick lands 50 s after work ended
+  await page.clock.runFor(1000)
+  await expect(phase(page)).toHaveText('Short break')
+  await expect(time(page)).toHaveText('04:09')
+})
+
+test('pressing Enter in a length field applies it', async ({ page }) => {
+  await open(page)
+  await field(page, /^Work/).fill('25')
+  await field(page, /^Work/).press('Enter')
+  await expect(time(page)).toHaveText('25:00')
+})
+
+test('skipping a work session only uses up the time worked by default', async ({ page }) => {
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
+  await button(page, 'Start').click()
+  await page.clock.runFor('05:00')
+  await button(page, 'Skip').click()
+  await expect(page.locator('.budget')).toHaveText('55:00 of work left')
+})
+
+test('with the toggle on, skipping uses up the whole work session', async ({ page }) => {
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
+  await page.getByRole('checkbox', { name: 'Skipping uses up the whole session' }).check()
+  await button(page, 'Start').click()
+  await page.clock.runFor('05:00')
+  await button(page, 'Skip').click()
+  await expect(page.locator('.budget')).toHaveText('40:00 of work left')
+})
+
+test('the blur toggle hides the time on the tomato', async ({ page }) => {
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Blur the timer' }).check()
+  await expect(time(page)).toHaveCSS('filter', 'blur(9px)')
+  await expect(page.getByRole('img', { name: 'Time hidden' })).toBeVisible()
+  await expect(page.locator('.progress')).toBeHidden()
+})
+
+test('the victory sound, not the regular one, plays when all work time is used', async ({ page }) => {
+  // Count the tones each sound asks for: the short beep is 1, the victory sound is 8.
+  await page.addInitScript(() => {
+    const w = window as unknown as { tones: number }
+    w.tones = 0
+    const make = AudioContext.prototype.createOscillator
+    AudioContext.prototype.createOscillator = function () {
+      w.tones++
+      return make.call(this)
+    }
+  })
+  await open(page)
+  await page.getByRole('checkbox', { name: 'Limit total work time' }).check()
+  await setField(page, /^Total work/, '5')
+  await button(page, 'Start').click()
+  await page.clock.runFor('05:01')
+  await expect(phase(page)).toHaveText('Done')
+  expect(await page.evaluate(() => (window as unknown as { tones: number }).tones)).toBe(8)
 })

@@ -119,6 +119,14 @@ main {
   stroke-width: 3px;
 }
 
+.blurred .time {
+  filter: blur(9px);
+}
+
+.blurred .progress {
+  display: none;
+}
+
 /* Status */
 
 .status {

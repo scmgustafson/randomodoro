@@ -1,4 +1,4 @@
-export type Sound = 'beep' | 'beeps' | 'classical'
+export type Sound = 'beep' | 'beeps' | 'classical' | 'victory'
 
 let ctx: AudioContext | undefined
 
@@ -34,6 +34,13 @@ export function play(sound: Sound) {
   if (sound === 'beep') return tone(ac, 880, t, 0.3)
   if (sound === 'beeps') {
     for (let i = 0; i < 5; i++) tone(ac, 880, t + i * 0.25, 0.15)
+    return
+  }
+  if (sound === 'victory') {
+    // Rising C major arpeggio, then the full chord held.
+    const chord = [523.25, 659.25, 783.99, 1046.5]
+    chord.forEach((freq, i) => tone(ac, freq, t + i * 0.12, 0.12))
+    for (const freq of chord) tone(ac, freq, t + 0.48, 1.2)
     return
   }
   for (const [freq, beats] of ODE) {

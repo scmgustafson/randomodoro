@@ -92,3 +92,11 @@ UI checked manually in the browser.
 - Top bar with the title "Randomodoro" and a dark mode toggle next to it.
 - Error toasts replace the inline Random reason and report corrected number inputs. The Random button is clickable whenever the timer is stopped.
 - Modern styling: drop shadows, cards, transitions, a progress ring around the tomato.
+
+## Addendum 2 (2026-10-02)
+
+- "Skipping uses up the whole session" toggle (shown when a total work time is set, off by default). Off: a skipped work session deducts only the time actually worked. On: it deducts the full session length.
+- Victory sound: a fixed synthesized fanfare that plays instead of the regular sound when the total work time reaches 0. A Preview button plays it.
+- "Blur the timer" toggle: blurs the time on the tomato and hides the progress ring. Works while the timer runs.
+- End-to-end tests run with Playwright (`npm run e2e`).
+- A phase that ends late (throttled background tab) no longer delays the following phases; the next phase is timed from when the previous one should have ended.

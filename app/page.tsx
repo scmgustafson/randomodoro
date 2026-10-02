@@ -13,7 +13,7 @@ import {
 } from '@/lib/pomodoro'
 import { play, unlock, type Sound } from '@/lib/sounds'
 
-const DEFAULTS = { work: 20, short: 5, long: 15, budgetOn: false, budget: 60, min: 5, max: 30, sound: 'beep' as Sound }
+const DEFAULTS = { work: 20, short: 5, long: 15, budgetOn: false, budget: 60, min: 5, max: 30, sound: 'beep' as Sound, skipDepletes: false, blur: false }
 type Config = typeof DEFAULTS
 
 const LABELS = { work: 'Work', short: 'Short break', long: 'Long break', done: 'Done' }
@@ -46,11 +46,12 @@ function Num(p: {
         defaultValue={p.value}
         onBlur={(e) => {
           const v = clampMinutes(e.target.value, p.min, p.max)
-          if (String(v) !== e.target.value.trim())
+          if (Number(e.target.value) !== v)
             p.notify(`${p.label} must be a whole number from ${p.min} to ${p.max}. Set to ${v}.`)
           e.target.value = String(v)
           if (v !== p.value) p.onCommit(v)
         }}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
       />
     </label>
   )
@@ -77,10 +78,13 @@ export default function Page() {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000)
   }
 
-  function begin(next: State, run: boolean) {
+  // from = when the phase starts. A late tick passes the previous phase's end so the
+  // schedule does not drift; if that would already be over (laptop slept), start now.
+  function begin(next: State, run: boolean, from = Date.now()) {
+    const end = from + next.duration * 1000
     setSt(next)
     setLeft(next.duration)
-    setEndAt(run && next.phase !== 'done' ? Date.now() + next.duration * 1000 : null)
+    setEndAt(run && next.phase !== 'done' ? (end > Date.now() ? end : Date.now() + next.duration * 1000) : null)
   }
 
   useEffect(() => {
@@ -90,8 +94,9 @@ export default function Page() {
     const id = setInterval(() => {
       const l = (endAt - Date.now()) / 1000
       if (l > 0) return setLeft(l)
-      play(cfg.sound)
-      begin(nextPhase(st, toSettings(cfg)), true)
+      const next = nextPhase(st, toSettings(cfg))
+      play(next.phase === 'done' ? 'victory' : cfg.sound)
+      begin(next, true, endAt)
     }, 250)
     return () => clearInterval(id)
   }, [endAt, st, cfg])
@@ -110,7 +115,12 @@ export default function Page() {
     setEndAt(null)
   }
 
-  const skip = () => begin(nextPhase(st, toSettings(cfg), Math.round(st.duration - left)), running)
+  function skip() {
+    const whole = st.phase === 'work' && cfg.skipDepletes
+    const next = nextPhase(st, toSettings(cfg), whole ? st.duration : Math.round(st.duration - left))
+    if (next.phase === 'done') play('victory')
+    begin(next, running)
+  }
   const reset = () => begin(initialState(toSettings(cfg)), false)
 
   function random() {
@@ -139,7 +149,12 @@ export default function Page() {
       </header>
 
       <main>
-        <svg viewBox="0 0 220 220" className={running ? 'tomato running' : 'tomato'} role="img" aria-label="Tomato timer">
+        <svg
+          viewBox="0 0 220 220"
+          className={`tomato${running ? ' running' : ''}${cfg.blur ? ' blurred' : ''}`}
+          role="img"
+          aria-label={cfg.blur ? 'Time hidden' : `${formatTime(left)} left`}
+        >
           <defs>
             <radialGradient id="skin" cx="35%" cy="28%" r="80%">
               <stop offset="0%" stopColor="#ff7a5c" />
@@ -165,8 +180,10 @@ export default function Page() {
           </text>
         </svg>
 
-        <div className="status" aria-live="polite">
-          <p className="phase">{LABELS[st.phase]}</p>
+        <div className="status">
+          <p className="phase" aria-live="polite">
+            {LABELS[st.phase]}
+          </p>
           <div className="dots" role="img" aria-label={`${cycleDone} of 3 work sessions done in this cycle`}>
             {[0, 1, 2].map((i) => (
               <span key={i} className={i < cycleDone ? 'dot on' : 'dot'} />
@@ -197,6 +214,16 @@ export default function Page() {
           {cfg.budgetOn && (
             <Num label="Total work" value={cfg.budget} min={5} max={1440} notify={notify} onCommit={(v) => update({ budget: v })} />
           )}
+          {cfg.budgetOn && (
+            <label>
+              Skipping uses up the whole session
+              <input
+                type="checkbox"
+                checked={cfg.skipDepletes}
+                onChange={(e) => setCfg({ ...cfg, skipDepletes: e.target.checked })}
+              />
+            </label>
+          )}
           <hr />
           <Num label="Shortest random session" value={cfg.min} min={5} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, min: v })} />
           <Num label="Longest random session" value={cfg.max} min={5} max={120} notify={notify} onCommit={(v) => setCfg({ ...cfg, max: v })} />
@@ -218,6 +245,14 @@ export default function Page() {
               <option value="beeps">Many beeps</option>
               <option value="classical">Classical (Ode to Joy)</option>
             </select>
+          </label>
+          <label>
+            Victory sound when all work is done
+            <button onClick={() => play('victory')}>Preview</button>
+          </label>
+          <label>
+            Blur the timer
+            <input type="checkbox" checked={cfg.blur} onChange={(e) => setCfg({ ...cfg, blur: e.target.checked })} />
           </label>
         </div>
       </main>
